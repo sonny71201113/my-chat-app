@@ -1,0 +1,307 @@
+/* 全局重置與基礎設定 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #000000;
+    /* 極致深黑背景 */
+    color: #F5F5F5;
+    /* 淺白文字 */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    /* 滿版高度 */
+    overflow: hidden;
+    /* 防止 Body 捲動，只讓 Chat Container 捲動 */
+}
+
+/* 頂部 Header 樣式 */
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background-color: #000000;
+    border-bottom: 1px solid #262626;
+    /* 微妙的深灰分隔線 */
+    z-index: 10;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #333;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.username {
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.3px;
+}
+
+.status {
+    font-size: 12px;
+    color: #A8A8A8;
+    /* 次要文字顏色 */
+}
+
+.header-icons {
+    display: flex;
+    gap: 20px;
+    color: #F5F5F5;
+}
+
+/* 聊天區域 Main 樣式 */
+.chat-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    /* 允許垂直捲動 */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* 訊息間距 */
+}
+
+/* 捲動條美化 (Chrome, Safari) */
+.chat-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+    background-color: #333;
+    border-radius: 10px;
+}
+
+/* 時間戳記 */
+.time-stamp {
+    text-align: center;
+    font-size: 11px;
+    color: #8E8E8E;
+    margin: 15px 0;
+}
+
+/* 訊息氣泡通用樣式 */
+.message {
+    max-width: 70%;
+    display: flex;
+    align-items: flex-end;
+    /* 頭像對齊底部 */
+    gap: 8px;
+    margin-bottom: 2px;
+    animation: popIn 0.3s cubic-bezier(0.12, 0.4, 0.14, 1.25);
+    /* 彈出動畫 */
+    transform-origin: bottom left;
+    /* 預設從左下彈出 */
+}
+
+/* 進場動畫 Keyframes */
+@keyframes popIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.message-content {
+    padding: 10px 16px;
+    font-size: 15px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    position: relative;
+    border-radius: 22px;
+    /* 圓潤的圓角 */
+}
+
+/* 左側 (對方) 訊息 */
+.message.left {
+    align-self: flex-start;
+    transform-origin: bottom left;
+}
+
+.message.left .message-content {
+    background-color: #262626;
+    /* 深灰背景 */
+    color: #F5F5F5;
+    border-bottom-left-radius: 4px;
+    /* 模擬連續對話的氣泡形狀 */
+}
+
+/* 左側頭像 */
+.avatar-small img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    margin-bottom: 4px;
+}
+
+/* 右側 (我) 訊息 */
+.message.right {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+    /* 讓頭像(如果有)在右邊，這裡我們不放頭像，但保持結構一致 */
+    transform-origin: bottom right;
+    /* 右側訊息從右下彈出 */
+}
+
+.message.right .message-content {
+    /* IG 風格漸層：紫色到藍色 */
+    background: linear-gradient(90deg, #7F00FF 0%, #E100FF 100%);
+    color: #FFFFFF;
+    border-bottom-right-radius: 4px;
+    /* 模擬連續對話的氣泡形狀 */
+}
+
+/* 打字中指示器 */
+.typing-indicator {
+    padding: 12px 16px;
+    background-color: #262626;
+    border-radius: 22px;
+    border-bottom-left-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: fit-content;
+    height: 40px;
+}
+
+.dot {
+    width: 6px;
+    height: 6px;
+    background-color: #A8A8A8;
+    border-radius: 50%;
+    animation: wave 1.3s linear infinite;
+}
+
+.dot:nth-child(2) {
+    animation-delay: -1.1s;
+}
+
+.dot:nth-child(3) {
+    animation-delay: -0.9s;
+}
+
+@keyframes wave {
+
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+    }
+
+    30% {
+        transform: translateY(-4px);
+    }
+}
+
+
+/* 底部 Input 區域樣式 */
+.chat-input-area {
+    padding: 10px 20px;
+    background-color: #000000;
+    border-top: 1px solid #262626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.input-wrapper {
+    width: 100%;
+    background-color: #262626;
+    border-radius: 24px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.icon-camera {
+    color: #F5F5F5;
+    background-color: #0095F6;
+    /* IG 相機藍 */
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.icon-camera svg {
+    width: 18px;
+    height: 18px;
+}
+
+
+#message-input {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    color: #F5F5F5;
+    font-size: 15px;
+    outline: none;
+    padding: 4px 0;
+}
+
+#message-input::placeholder {
+    color: #A8A8A8;
+}
+
+.send-btn {
+    background: transparent;
+    border: none;
+    color: #0095F6;
+    /* IG 連結藍 */
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    /* 預設隱藏或變淡，直到打字，這裡我們先保持顯示但可調整 */
+    opacity: 0.9;
+}
+
+.send-btn:hover {
+    color: #E100FF;
+    /* Hover 時變色增加互動感 */
+}
+
+/* 隱藏標籤但保持可訪問性 */
+.hidden-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
