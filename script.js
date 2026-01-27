@@ -2,6 +2,7 @@
 const chatContainer = document.getElementById('chat-container');
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
+const modeSelect = document.getElementById('mode-select');
 
 // (移除) 機器人的隨機回覆庫 - 改用 API
 
@@ -15,6 +16,7 @@ async function sendMessage() {
     // 1. 顯示我的訊息 (User)
     addMessage(text, 'right');
 
+    const mode = modeSelect.value;
     // 清空輸入框
     messageInput.value = '';
 
@@ -23,7 +25,7 @@ async function sendMessage() {
 
     try {
         // 3. 呼叫 Gemini AI (透過我們自建的後端 API)
-        const reply = await callGeminiAI(text);
+        const reply = await callGeminiAI(text, mode);
 
         // 4. 移除輸入指示器並顯示回覆
         removeTypingIndicator();
@@ -38,15 +40,19 @@ async function sendMessage() {
 /**
  * 呼叫後端 API (/api/chat)
  * @param {string} userMessage 使用者輸入的訊息
+ * @param {string} mode 回覆模式 ('short' 或 'detailed')
  * @returns {Promise<string>} AI 的回覆
  */
-async function callGeminiAI(userMessage) {
+async function callGeminiAI(userMessage, mode = 'short') {
     const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ message: userMessage })
+        body: JSON.stringify({
+            message: userMessage,
+            mode: mode
+        })
     });
 
     if (!response.ok) {
