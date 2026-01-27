@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     try {
         // 呼叫 Gemini API (使用 gemini-1.5-flash 或 gemini-pro)
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini 3 flash:generateContent?key=${apiKey}`,
             {
                 method: 'POST',
                 headers: {
