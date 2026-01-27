@@ -255,6 +255,24 @@ body {
     flex-shrink: 0;
 }
 
+/* 新增：模式選擇下拉單樣式 */
+.mode-select {
+    background-color: #363636;
+    color: #F5F5F5;
+    border: none;
+    border-radius: 12px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    font-family: inherit;
+    /* 移除預設箭頭 (可選，這裡保留原生箭頭但換色) */
+}
+
+.mode-select:hover {
+    background-color: #444;
+}
+
 .icon-camera svg {
     width: 18px;
     height: 18px;
