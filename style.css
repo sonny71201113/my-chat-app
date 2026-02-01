@@ -147,6 +147,33 @@ body {
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
+/* 通知按鈕樣式 */
+.notify-btn {
+    background: transparent;
+    border: none;
+    color: #F5F5F5;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    opacity: 0.6;
+}
+
+.notify-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    opacity: 1;
+}
+
+/* 已啟用狀態 (JS 控制 class) */
+.notify-btn.active {
+    color: #00ff88;
+    opacity: 1;
+    text-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+}
+
 /* 呼吸燈指示器 */
 .pulse-indicator {
     width: 8px;
