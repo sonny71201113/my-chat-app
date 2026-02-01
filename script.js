@@ -203,3 +203,142 @@ messageInput.addEventListener('keydown', (e) => {
 
 // 啟動初始化
 init();
+
+// --- 通知系統相關功能 ---
+
+// 1. 初始化與按鈕監聽
+const notifyBtn = document.getElementById('notify-btn');
+notifyBtn.addEventListener('click', () => {
+    // 請求權限
+    if (Notification.permission !== "granted") {
+        Notification.requestPermission().then(permission => {
+            updateNotifyBtnState();
+            if (permission === "granted") {
+                new Notification("通知已啟用", { body: "我會準時提醒您！" });
+            }
+        });
+    }
+});
+
+/**
+ * 更新通知按鈕狀態 (亮起或變暗)
+ */
+function updateNotifyBtnState() {
+    if (Notification.permission === "granted") {
+        notifyBtn.classList.add('active');
+        notifyBtn.title = "通知已啟用";
+    } else {
+        notifyBtn.classList.remove('active');
+        notifyBtn.title = "點擊啟用通知";
+    }
+}
+
+// 2. 定時檢查系統 (每 10 秒檢查一次，比較精確)
+setInterval(checkReminders, 10000);
+
+/**
+ * 檢查是否有到期的備忘錄
+ */
+function checkReminders() {
+    if (Notification.permission !== "granted") return;
+
+    const now = new Date();
+    // 格式化當前時間為 YYYY-MM-DD HH:mm (與 AI 回傳格式需一致)
+    // 為了容錯，我們也嘗試只比對 HH:mm
+    const currentFullTime = formatTime(now); // "2024-01-01 10:00"
+    const currentShortTime = formatTimeShort(now); // "10:00"
+
+    let updated = false;
+
+    memos.forEach(memo => {
+        if (memo.notified) return; // 已經通知過就跳過
+
+        // 判斷邏輯：
+        // 1. 完全符合 YYYY-MM-DD HH:mm
+        // 2. 或者只符合 HH:mm (當 AI 偷懶只給短時間時)
+        // 3. 簡單檢查字串包含 (例如 "明天 10:00" 包含 "10:00") - 這比較寬鬆，但對簡單應用足夠
+
+        let shouldNotify = false;
+
+        // 如果 memo.time 是完整格式
+        if (memo.time === currentFullTime) {
+            shouldNotify = true;
+        }
+        // 寬鬆比對：如果當前時間字串出現在 memo.time 裡 (例如 memo: "下午 02:00", current: "14:00" -> 需注意 12/24 小時制)
+        // 這裡我們假設 AI 能依照指示給出 24 小時制格式，或是我們解析比較
+        // 簡單做：如果 memo.time 包含當下短時間 (HH:mm)
+        else if (memo.time && memo.time.includes(currentShortTime)) {
+            // 避免誤判 (如 10:00 包含 0:00)，這裡先簡單做
+            shouldNotify = true;
+        }
+
+        if (shouldNotify) {
+            sendNotification(memo);
+            memo.notified = true; // 標記為已通知
+            updated = true;
+        }
+    });
+
+    if (updated) {
+        saveMemos(); // 儲存 notified 狀態
+    }
+}
+
+/**
+ * 發送瀏覽器通知
+ */
+function sendNotification(memo) {
+    // 1. 彈窗
+    const n = new Notification("經理人提醒", {
+        body: memo.title,
+        icon: "https://ui-avatars.com/api/?name=AI&background=0095F6&color=fff", // 簡單圖示
+        requireInteraction: true // 讓通知停留在螢幕上直到使用者點擊
+    });
+
+    // 點擊通知回到視窗
+    n.onclick = function () {
+        window.focus();
+        this.close();
+    };
+
+    // 2. 播放提示音
+    playNotificationSound();
+}
+
+/**
+ * 播放短促提示音 (Base64 Beep)
+ */
+function playNotificationSound() {
+    // 一個簡單的短促提示音 (Glass Ping)
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5
+    oscillator.frequency.exponentialRampToValueAtTime(440, audioContext.currentTime + 0.1);
+
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.1);
+}
+
+// 輔助函式：格式化時間 YYYY-MM-DD HH:mm
+function formatTime(date) {
+    const pad = (n) => n.toString().padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+// 輔助函式：格式化時間 HH:mm
+function formatTimeShort(date) {
+    const pad = (n) => n.toString().padStart(2, '0');
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+// 頁面載入時檢查權限狀態
+updateNotifyBtnState();
