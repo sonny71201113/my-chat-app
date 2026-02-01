@@ -600,57 +600,110 @@ body {
     border: 0;
 }
 
-/* --- 備忘錄動態元件美化包 --- */
+/* --- 備忘錄動態元件美化包 (Cyberpunk Edition) --- */
 
 /* 1. 美化編輯與刪除按鈕 */
 .memo-actions button {
-    background: rgba(255, 255, 255, 0.1); /* 半透明背景 */
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #e0e0e0;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #00c6ff;
+    /* 青色邊框 */
+    color: #00c6ff;
     padding: 6px 12px;
-    border-radius: 8px; /* 圓角 */
+    border-radius: 2px;
+    /* 銳利邊角 */
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    /* 科技感字體 */
+    letter-spacing: 1px;
     transition: all 0.2s ease;
-    margin-right: 6px;
+    text-transform: uppercase;
+    box-shadow: 0 0 5px rgba(0, 198, 255, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .memo-actions button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-1px); /* 滑鼠放上去會微微浮起 */
+    background: rgba(0, 198, 255, 0.2);
+    box-shadow: 0 0 10px rgba(0, 198, 255, 0.6);
+    text-shadow: 0 0 5px #00c6ff;
+    transform: translateY(-1px);
 }
 
-/* 讓刪除按鈕變紅色，比較好認 */
-.memo-actions button:last-child:hover {
-    background: rgba(255, 59, 48, 0.3); /* 紅色警告感 */
-    border-color: rgba(255, 59, 48, 0.5);
-    color: #ffcccb;
+/* 刪除按鈕 (Cyberpunk Red) */
+.memo-actions button.delete {
+    border-color: #ff0055;
+    color: #ff0055;
+    box-shadow: 0 0 5px rgba(255, 0, 85, 0.2);
 }
 
-/* 2. 美化編輯時的輸入框 */
+.memo-actions button.delete:hover {
+    background: rgba(255, 0, 85, 0.2);
+    box-shadow: 0 0 10px rgba(255, 0, 85, 0.6);
+    color: #ff0055;
+    text-shadow: 0 0 5px #ff0055;
+}
+
+/* 重來按鈕 (Cyberpunk Green) */
+.memo-actions button.restart {
+    border-color: #00ff88;
+    color: #00ff88;
+    box-shadow: 0 0 5px rgba(0, 255, 136, 0.2);
+}
+
+.memo-actions button.restart:hover {
+    background: rgba(0, 255, 136, 0.2);
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
+    color: #00ff88;
+    text-shadow: 0 0 5px #00ff88;
+}
+
+/* 2. 美化編輯時的輸入框 (Neon Field) */
 .memo-card input[type="text"],
 .memo-card input[type="datetime-local"] {
-    background: #2a2a2a; /* 深色底 */
-    border: 1px solid #444;
-    color: #fff; /* 白字 */
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-family: inherit;
+    background: rgba(10, 10, 16, 0.9);
+    border: 1px solid #333;
+    border-left: 3px solid #00c6ff;
+    /* 左側亮條 */
+    color: #e0faff;
+    padding: 8px 10px;
+    border-radius: 0;
+    /* 直角 */
+    font-family: 'Courier New', monospace;
     font-size: 14px;
     outline: none;
-    width: 100%; /* 讓它填滿空間 */
-    margin-bottom: 5px; /* 跟下面的按鈕分開一點 */
+    width: 100%;
+    margin-bottom: 8px;
+    transition: all 0.3s;
 }
 
 .memo-card input:focus {
-    border-color: #0095F6; /* 聚焦時變 IG 藍 */
-    box-shadow: 0 0 0 2px rgba(0, 149, 246, 0.3);
+    border-color: #00c6ff;
+    background: rgba(0, 198, 255, 0.1);
+    box-shadow: 0 0 15px rgba(0, 198, 255, 0.2);
 }
 
-/* 調整一下按鈕的排列，讓它們不要擠在一起 */
+.memo-card input::placeholder {
+    color: #445;
+}
+
+/* 編輯提示 */
+.edit-hint {
+    font-size: 10px;
+    color: #555;
+    text-align: right;
+    margin-top: -4px;
+    font-family: monospace;
+}
+
+/* 調整按鈕容器 */
 .memo-actions {
-    margin-top: 8px;
+    margin-top: 12px;
     display: flex;
-    gap: 5px;
+    gap: 8px;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    /* 分隔線 */
 }
-
