@@ -186,6 +186,7 @@ function toggleEditMode(li, memo) {
     contentDiv.innerHTML = `
         <input type="text" class="memo-time-edit" value="${memo.time || ''}" placeholder="YYYY-MM-DD HH:mm">
         <input type="text" class="memo-title-edit" value="${memo.title}">
+        <div class="edit-hint">按 Enter 儲存，點擊卡片外完成</div>
     `;
 
     const titleInput = contentDiv.querySelector('.memo-title-edit');
@@ -206,15 +207,24 @@ function toggleEditMode(li, memo) {
         li.classList.remove('editing');
     };
 
-    // 綁定儲存事件 (Blur 或 Enter)
-    titleInput.addEventListener('blur', (e) => {
-        // 稍微延遲以防止點擊其他按鈕時衝突
+    // 處理焦點邏輯：使用 focusout 偵測是否離開整個編輯區
+    contentDiv.addEventListener('focusout', (e) => {
+        // e.relatedTarget 是新獲得焦點的元素
+        // 如果新焦點還在 contentDiv 內部 (例如從標題跳到時間)，則不觸發儲存
+        if (contentDiv.contains(e.relatedTarget)) {
+            return;
+        }
+        // 確實離開了，執行儲存
         setTimeout(saveEdit, 200);
     });
-    titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') saveEdit(); });
 
-    // 時間欄位也綁定
-    timeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') saveEdit(); });
+    // 鍵盤事件
+    const handleKey = (e) => {
+        if (e.key === 'Enter') saveEdit();
+    };
+
+    titleInput.addEventListener('keydown', handleKey);
+    timeInput.addEventListener('keydown', handleKey);
 }
 
 /**
