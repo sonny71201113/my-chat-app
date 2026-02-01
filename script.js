@@ -3,8 +3,18 @@ const chatContainer = document.getElementById('chat-container');
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
 const modeSelect = document.getElementById('mode-select');
+const memoList = document.getElementById('memo-list');
 
-// (移除) 機器人的隨機回覆庫 - 改用 API
+// 儲存備忘錄的陣列
+let memos = [];
+
+/**
+ * 初始化
+ */
+function init() {
+    loadMemos();
+    scrollToBottom();
+}
 
 /**
  * 發送訊息的主要函數
@@ -24,12 +34,24 @@ async function sendMessage() {
     showTypingIndicator();
 
     try {
-        // 3. 呼叫 Gemini AI (透過我們自建的後端 API)
-        const reply = await callGeminiAI(text, mode);
+        // 3. 呼叫 Gemini AI
+        const data = await callGeminiAI(text, mode);
 
-        // 4. 移除輸入指示器並顯示回覆
+        // 4. 移除輸入指示器
         removeTypingIndicator();
-        addMessage(reply, 'left');
+
+        // 5. 處理 AI 回覆
+        // data.text 是對話回應
+        if (data.text) {
+            addMessage(data.text, 'left');
+        }
+
+        // data.memo 是備忘錄指令 (如果有的話)
+        if (data.memo) {
+            addMemo(data.memo.title, data.memo.time);
+            saveMemos(); // 儲存到 LocalStorage
+        }
+
     } catch (error) {
         console.error("Error calling API:", error);
         removeTypingIndicator();
@@ -39,11 +61,8 @@ async function sendMessage() {
 
 /**
  * 呼叫後端 API (/api/chat)
- * @param {string} userMessage 使用者輸入的訊息
- * @param {string} mode 回覆模式 ('short' 或 'detailed')
- * @returns {Promise<string>} AI 的回覆
  */
-async function callGeminiAI(userMessage, mode = 'short') {
+async function callGeminiAI(userMessage, mode = 'manager') {
     const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -60,8 +79,52 @@ async function callGeminiAI(userMessage, mode = 'short') {
         throw new Error(errorData.error || 'Server error');
     }
 
-    const data = await response.json();
-    return data.reply;
+    // 預期回傳: { text: "...", memo: { title: "...", time: "..." } }
+    return await response.json();
+}
+
+
+/**
+ * 新增備忘錄到列表
+ */
+function addMemo(title, time) {
+    const memo = { title, time, id: Date.now() };
+    memos.push(memo);
+    renderMemo(memo);
+    // 播放一個音效或動畫效果 (可選)
+}
+
+/**
+ * 渲染單個備忘錄卡片
+ */
+function renderMemo(memo) {
+    const li = document.createElement('li');
+    li.classList.add('memo-card');
+    li.innerHTML = `
+        <div class="memo-time">${memo.time}</div>
+        <div class="memo-title">${memo.title}</div>
+    `;
+    memoList.prepend(li); // 新的放上面
+}
+
+/**
+ * 儲存備忘錄到 LocalStorage
+ */
+function saveMemos() {
+    localStorage.setItem('ai_manager_memos', JSON.stringify(memos));
+}
+
+/**
+ * 從 LocalStorage 載入備忘錄
+ */
+function loadMemos() {
+    const stored = localStorage.getItem('ai_manager_memos');
+    if (stored) {
+        memos = JSON.parse(stored);
+        // 清空列表重新渲染 (或保留，這裡選擇清空為了順序正確)
+        memoList.innerHTML = '';
+        memos.forEach(memo => renderMemo(memo));
+    }
 }
 
 /**
@@ -106,14 +169,11 @@ function removeTypingIndicator() {
 
 /**
  * 通用的加訊息函數
- * @param {string} text 訊息內容
- * @param {string} side 'left' 或 'right'
  */
 function addMessage(text, side) {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', side);
 
-    // 如果是左邊 (對方)，我們要加個小頭像
     if (side === 'left') {
         const avatarDiv = document.createElement('div');
         avatarDiv.classList.add('avatar-small');
@@ -123,19 +183,14 @@ function addMessage(text, side) {
 
     const contentDiv = document.createElement('div');
     contentDiv.classList.add('message-content');
-    // 支援一些簡單的換行顯示
     contentDiv.innerHTML = text.replace(/\n/g, '<br>');
 
     messageDiv.appendChild(contentDiv);
     chatContainer.appendChild(messageDiv);
 
-    // 捲動到底部
     scrollToBottom();
 }
 
-/**
- * 捲動到底部
- */
 function scrollToBottom() {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
@@ -146,5 +201,5 @@ messageInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
 
-// 初始化
-scrollToBottom();
+// 啟動初始化
+init();
