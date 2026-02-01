@@ -11,17 +11,24 @@ export default async function handler(req, res) {
     }
 
     // 依據模式設定 Prompt
-    let systemInstruction = "你是一個私人 AI 經理。請用繁體中文回答。";
-    
+    // 注入伺服器目前時間，協助 AI 計算相對時間 (如: "10分鐘後")
+    const now = new Date();
+    const currentTimeString = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false });
+
+    let systemInstruction = `你是一個私人 AI 經理。現在時間是：${currentTimeString}。請用繁體中文回答。`;
+
     // 關鍵：強制要求 JSON 格式
     systemInstruction += `
     重要：不管使用者說什麼，你都 **必須** 回傳一個純 JSON 格式的字串，不要有任何 Markdown 標記（不要用 \`\`\`json）。
     格式範例：
     {
       "reply": "好的，幫你記下這件事。",
-      "memo": { "title": "收衣服", "time": "2分鐘後" }
+      "memo": { "title": "開會", "time": "2024-01-01 10:00" }
     }
-    如果不需要紀錄，"memo" 欄位填 null。
+    關於 "memo" 的規則：
+    1. 如果不需要紀錄，"time" 填 null。
+    2. "time" 欄位請務必給出 **絕對時間**，格式為 "YYYY-MM-DD HH:mm" (24小時制)。
+    3. 如果使用者說 "10分鐘後"，請根據「現在時間」自己計算出未來的時間點。
     `;
 
     if (mode === 'detailed') {
@@ -62,9 +69,9 @@ export default async function handler(req, res) {
             parsedResult = JSON.parse(rawText);
         } catch (e) {
             // 萬一 AI 還是講廢話，我們手動幫它補救成 JSON
-            parsedResult = { 
+            parsedResult = {
                 reply: rawText, // 把整段話當作回覆
-                memo: null 
+                memo: null
             };
         }
 
