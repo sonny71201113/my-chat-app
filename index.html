@@ -39,37 +39,41 @@
         </div>
     </header>
 
-    <!-- 聊天顯示區域 -->
-    <main id="chat-container" class="chat-container">
-        <!-- 預設歡迎訊息 -->
-        <div class="time-stamp">今天 10:23</div>
+    <div class="main-layout">
+        <!-- 左側：聊天顯示區域 -->
+        <main id="chat-container" class="chat-container">
+            <!-- 預設歡迎訊息 -->
+            <div class="time-stamp">今天 10:23</div>
 
-        <div class="message left">
-            <div class="avatar-small">
-                <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User Avatar">
+            <div class="message left">
+                <div class="avatar-small">
+                    <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User Avatar">
+                </div>
+                <div class="message-content">
+                    嘿！我是你的個人 AI 經理人。有什麼行程需要我幫你記錄嗎？
+                </div>
             </div>
-            <div class="message-content">
-                嘿！你看過最新的設計趨勢了嗎？
-            </div>
-        </div>
+        </main>
 
-        <div class="message right">
-            <div class="message-content">
-                你是說那個新的 Neumorphism 嗎？
+        <!-- 右側：戰術面板 (Dashboard) -->
+        <aside class="dashboard">
+            <div class="dashboard-header">
+                <h2>我的行程 & 備忘</h2>
+                <div class="pulse-indicator"></div>
             </div>
-        </div>
+            <ul id="memo-list" class="memo-list">
+                <!-- 備忘錄事項將由 JS 動態生成 -->
+                <!-- 範例：
+                <li class="memo-card">
+                    <div class="memo-time">10:00 AM</div>
+                    <div class="memo-title">Team Meeting</div>
+                </li> 
+                -->
+            </ul>
+        </aside>
+    </div>
 
-        <div class="message left">
-            <div class="avatar-small">
-                <img src="https://ui-avatars.com/api/?name=User&background=random" alt="User Avatar">
-            </div>
-            <div class="message-content">
-                對啊！不過我覺得現在 Glassmorphism 更流行一點。
-            </div>
-        </div>
-    </main>
-
-    <!-- 底部輸入區域 -->
+    <!-- 底部輸入區域 (保持在最下方，但在 Flex 結構中可能需要調整，稍後 CSS 處理) -->
     <footer class="chat-input-area">
         <label for="message-input" class="hidden-label">輸入訊息</label>
         <div class="input-wrapper">
@@ -83,10 +87,10 @@
             </div>
             <!-- 新增：回應模式選擇 -->
             <select id="mode-select" class="mode-select" aria-label="選擇回覆模式">
-                <option value="short">閒聊模式</option>
-                <option value="detailed">導師模式</option>
+                <option value="manager">經理人模式</option>
+                <option value="chat">閒聊模式</option>
             </select>
-            <input type="text" id="message-input" placeholder="發送訊息..." autocomplete="off">
+            <input type="text" id="message-input" placeholder="告訴我需要記錄什麼..." autocomplete="off">
             <button id="send-btn" class="send-btn">
                 發送
             </button>
