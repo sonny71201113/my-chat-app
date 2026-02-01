@@ -16,20 +16,48 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Server configuration error: GEMINI_API_KEY is missing' });
     }
 
-    // 根據 mode 設定 System Prompt (或附加在訊息前)
+    // 根據 mode 設定 System Prompt
     let systemInstruction = "";
-    if (mode === 'short') {
-        systemInstruction = "請用極簡短的口語回覆，像朋友聊天一樣，不要超過 50 個字。";
-    } else if (mode === 'detailed') {
-        systemInstruction = "請用詳細、條理分明的方式回覆，適合教學或解釋複雜概念。";
+    if (mode === 'manager' || mode === 'detailed') { // 兼容舊的 detailed 模式
+        systemInstruction = `
+你是一位專業的「個人 AI 經理人」。你的職責是協助使用者管理生活與工作。
+請遵循以下規則回覆：
+1. 回覆格式必須是嚴格的 JSON 格式，不要包含任何 Markdown 標記 (如 \`\`\`json)。
+2. JSON 結構如下：
+   {
+     "text": "你的回覆內容...",
+     "memo": { "title": "待辦事項標題", "time": "時間 (例如 明天 10:00 AM)" } // 選填，只有當使用者明確要求紀錄或安排事項時才產生
+   }
+3. 如果使用者只是閒聊，"memo" 欄位請回傳 null。
+4. "text" 內容語氣要專業、親切且有效率。
+        `.trim();
+    } else {
+        // 閒聊模式
+        systemInstruction = `
+你是一位風趣幽默的朋友。
+請遵循以下規則回覆：
+1. 回覆格式必須是嚴格的 JSON 格式，不要包含任何 Markdown 標記。
+2. JSON 結構如下：
+   {
+     "text": "你的回覆內容...",
+     "memo": null
+   }
+3. 語氣輕鬆自然，像朋友一樣。
+        `.trim();
     }
 
-    // 為了讓這段 Prompt 生效，我們可以將其作為 System Instruction 傳遞
-    // 或者簡單地將其加在 User Message 前面 (相容性較好)
-    const finalPrompt = `[System Instruction: ${systemInstruction}]\n\nUser Message: ${message}`;
+    const finalPrompt = `
+System Instruction:
+${systemInstruction}
+
+User Message:
+${message}
+
+Important Output Rule: Output ONLY raw JSON. No markdown code blocks.
+    `.trim();
 
     try {
-        // 呼叫 Gemini API (使用 gemini-1.5-flash 或 gemini-pro)
+        // 呼叫 Gemini API
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
             {
@@ -53,10 +81,23 @@ export default async function handler(req, res) {
             throw new Error(data.error?.message || 'Failed to fetch from Gemini');
         }
 
-        // 解析 Gemini 回傳的格式
-        const reply = data.candidates[0].content.parts[0].text;
+        // 解析 Gemini 回傳的純文字
+        let rawText = data.candidates[0].content.parts[0].text;
 
-        return res.status(200).json({ reply });
+        // 嘗試清理可能的 Markdown 標記 (以前防萬一)
+        rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        // 嘗試 Parse JSON
+        let parsedReply;
+        try {
+            parsedReply = JSON.parse(rawText);
+        } catch (e) {
+            console.error("JSON Parse Error:", e, "Raw Text:", rawText);
+            // Fallback: 如果 AI 沒回傳 JSON，就當作普通文字與 null memo
+            parsedReply = { text: rawText, memo: null };
+        }
+
+        return res.status(200).json(parsedReply);
     } catch (error) {
         console.error('Gemini API Error:', error);
         return res.status(500).json({ error: 'Failed to process your request' });
