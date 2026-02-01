@@ -88,23 +88,184 @@ async function callGeminiAI(userMessage, mode = 'manager') {
  * 新增備忘錄到列表
  */
 function addMemo(title, time) {
-    const memo = { title, time, id: Date.now() };
+    const memo = {
+        title,
+        time,
+        id: Date.now(),
+        notified: false,
+        completed: false // 新增完成狀態
+    };
     memos.push(memo);
+    saveMemos();
     renderMemo(memo);
-    // 播放一個音效或動畫效果 (可選)
 }
 
 /**
- * 渲染單個備忘錄卡片
+ * 渲染單個備忘錄卡片 (重構：支援互動與重新渲染)
  */
 function renderMemo(memo) {
+    // 檢查是否已存在 (避免重複 render，或是用於更新時直接替換)
+    const existingLi = document.querySelector(`li[data-id="${memo.id}"]`);
+
     const li = document.createElement('li');
     li.classList.add('memo-card');
+    li.setAttribute('data-id', memo.id); // 綁定 ID
+
+    if (memo.completed) {
+        li.classList.add('completed');
+    }
+
+    // 構建 HTML
     li.innerHTML = `
-        <div class="memo-time">${memo.time}</div>
-        <div class="memo-title">${memo.title}</div>
+        <div class="memo-content">
+            <div class="memo-time" title="點擊編輯">${memo.time || '無時間'}</div>
+            <div class="memo-title" title="點擊編輯">${memo.title}</div>
+        </div>
+        <div class="memo-actions">
+            <button class="action-btn edit" title="編輯"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg> 編輯</button>
+            <button class="action-btn restart" title="再來一次 (重設時間)"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"></path></svg> 重來</button>
+            <button class="action-btn delete" title="刪除"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg> 刪除</button>
+        </div>
     `;
-    memoList.prepend(li); // 新的放上面
+
+    // 綁定事件
+    const editBtn = li.querySelector('.edit');
+    const deleteBtn = li.querySelector('.delete');
+    const restartBtn = li.querySelector('.restart');
+    const titleDiv = li.querySelector('.memo-title');
+    const timeDiv = li.querySelector('.memo-time');
+
+    // 刪除
+    deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('確定要刪除這個備忘錄嗎？')) {
+            deleteMemo(memo.id);
+        }
+    });
+
+    // 編輯 (按鈕觸發)
+    editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleEditMode(li, memo);
+    });
+
+    // 編輯 (點擊文字觸發)
+    titleDiv.addEventListener('click', (e) => { e.stopPropagation(); toggleEditMode(li, memo); });
+    timeDiv.addEventListener('click', (e) => { e.stopPropagation(); toggleEditMode(li, memo); });
+
+    // 再來一次 (重設時間)
+    if (!memo.completed) {
+        restartBtn.style.display = 'none'; // 未完成時隱藏重來按鈕
+    }
+    restartBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        rescheduleMemo(memo.id);
+    });
+
+    // 插入或替換
+    if (existingLi) {
+        existingLi.replaceWith(li);
+    } else {
+        // 根據時間排序插入，或簡單地放在最上面
+        // 為了簡單，我們保持最新在最上
+        memoList.prepend(li);
+    }
+}
+
+/**
+ * 切換編輯模式
+ */
+function toggleEditMode(li, memo) {
+    if (li.classList.contains('editing')) return;
+    li.classList.add('editing');
+
+    const contentDiv = li.querySelector('.memo-content');
+    const originalHTML = contentDiv.innerHTML;
+
+    // 替換為 Input
+    contentDiv.innerHTML = `
+        <input type="text" class="memo-time-edit" value="${memo.time || ''}" placeholder="YYYY-MM-DD HH:mm">
+        <input type="text" class="memo-title-edit" value="${memo.title}">
+    `;
+
+    const titleInput = contentDiv.querySelector('.memo-title-edit');
+    const timeInput = contentDiv.querySelector('.memo-time-edit');
+    titleInput.focus();
+
+    // 儲存函數
+    const saveEdit = () => {
+        const newTitle = titleInput.value.trim();
+        const newTime = timeInput.value.trim();
+
+        if (newTitle) {
+            updateMemo(memo.id, { title: newTitle, time: newTime });
+        } else {
+            // 如果標題清空了，則復原
+            renderMemo(memo);
+        }
+        li.classList.remove('editing');
+    };
+
+    // 綁定儲存事件 (Blur 或 Enter)
+    titleInput.addEventListener('blur', (e) => {
+        // 稍微延遲以防止點擊其他按鈕時衝突
+        setTimeout(saveEdit, 200);
+    });
+    titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') saveEdit(); });
+
+    // 時間欄位也綁定
+    timeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') saveEdit(); });
+}
+
+/**
+ * 更新備忘錄資料
+ */
+function updateMemo(id, updates) {
+    const index = memos.findIndex(m => m.id === id);
+    if (index !== -1) {
+        memos[index] = { ...memos[index], ...updates };
+        saveMemos();
+        renderMemo(memos[index]); // 重新渲染該卡片
+    }
+}
+
+/**
+ * 刪除備忘錄
+ */
+function deleteMemo(id) {
+    memos = memos.filter(m => m.id !== id);
+    saveMemos();
+    const li = document.querySelector(`li[data-id="${id}"]`);
+    if (li) {
+        li.style.opacity = '0';
+        li.style.transform = 'translateX(20px)';
+        setTimeout(() => li.remove(), 300);
+    }
+}
+
+/**
+ * 再來一次 (重設時間)
+ */
+function rescheduleMemo(id) {
+    const memo = memos.find(m => m.id === id);
+    if (!memo) return;
+
+    // 簡單用 prompt 讓使用者輸入新時間 (未來可優化為 Date Picker)
+    const now = new Date();
+    // 預設給一個 1 小時後的時間
+    now.setHours(now.getHours() + 1);
+    const defaultTime = formatTime(now);
+
+    const newTime = prompt("請輸入新的提醒時間 (YYYY-MM-DD HH:mm):", defaultTime);
+
+    if (newTime) {
+        updateMemo(id, {
+            time: newTime,
+            completed: false, // 重置完成狀態
+            notified: false   // 重置通知狀態
+        });
+        alert(`已重新排程於：${newTime}`);
+    }
 }
 
 /**
@@ -123,7 +284,9 @@ function loadMemos() {
         memos = JSON.parse(stored);
         // 清空列表重新渲染 (或保留，這裡選擇清空為了順序正確)
         memoList.innerHTML = '';
-        memos.forEach(memo => renderMemo(memo));
+        // 依照時間排序 (可選)，這裡我們依照陣列順序 (新增順序)
+        // 使用 reverse() 讓最新的在上面 (如果我們 push 是加在後面)
+        [...memos].reverse().forEach(memo => renderMemo(memo));
     }
 }
 
@@ -240,7 +403,7 @@ setInterval(checkReminders, 10000);
  * 檢查是否有到期的備忘錄
  */
 function checkReminders() {
-    if (Notification.permission !== "granted") return;
+    if (Notification.permission !== "granted") return; // 雖然沒權限也可以標記完成，但這裡先綁定
 
     const now = new Date();
     // 格式化當前時間為 YYYY-MM-DD HH:mm (與 AI 回傳格式需一致)
@@ -251,7 +414,7 @@ function checkReminders() {
     let updated = false;
 
     memos.forEach(memo => {
-        if (memo.notified) return; // 已經通知過就跳過
+        if (memo.notified || memo.completed) return; // 已經通知過或已完成就跳過
 
         // 判斷邏輯：
         // 1. 完全符合 YYYY-MM-DD HH:mm
@@ -274,13 +437,20 @@ function checkReminders() {
 
         if (shouldNotify) {
             sendNotification(memo);
-            memo.notified = true; // 標記為已通知
+
+            // 更新狀態
+            memo.notified = true;
+            memo.completed = true; // 自動標記為完成
+
+            // 視覺更新：重新渲染該卡片以顯示完成狀態
+            renderMemo(memo);
+
             updated = true;
         }
     });
 
     if (updated) {
-        saveMemos(); // 儲存 notified 狀態
+        saveMemos(); // 儲存狀態
     }
 }
 
