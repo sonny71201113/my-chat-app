@@ -16,7 +16,7 @@ body {
     height: 100vh;
     /* 滿版高度 */
     overflow: hidden;
-    /* 防止 Body 捲動，只讓 Chat Container 捲動 */
+    /* 防止 Body 捲動 */
 }
 
 /* 頂部 Header 樣式 */
@@ -29,6 +29,8 @@ body {
     border-bottom: 1px solid #262626;
     /* 微妙的深灰分隔線 */
     z-index: 10;
+    flex-shrink: 0;
+    /* 防止被壓縮 */
 }
 
 .user-info {
@@ -68,9 +70,20 @@ body {
     color: #F5F5F5;
 }
 
+/* 主要佈局容器 (Split Layout) */
+.main-layout {
+    display: flex;
+    flex: 1;
+    /* 佔滿剩餘高度 */
+    overflow: hidden;
+    /* 內部各自捲動 */
+    position: relative;
+}
+
 /* 聊天區域 Main 樣式 */
 .chat-container {
-    flex-grow: 1;
+    flex: 6;
+    /* 佔 60% */
     overflow-y: auto;
     /* 允許垂直捲動 */
     padding: 20px;
@@ -78,21 +91,159 @@ body {
     flex-direction: column;
     gap: 8px;
     /* 訊息間距 */
+    border-right: 1px solid #262626;
+    /* 分隔線 */
+    position: relative;
 }
 
 /* 捲動條美化 (Chrome, Safari) */
-.chat-container::-webkit-scrollbar {
+.chat-container::-webkit-scrollbar,
+.memo-list::-webkit-scrollbar {
     width: 6px;
 }
 
-.chat-container::-webkit-scrollbar-track {
+.chat-container::-webkit-scrollbar-track,
+.memo-list::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.chat-container::-webkit-scrollbar-thumb {
+.chat-container::-webkit-scrollbar-thumb,
+.memo-list::-webkit-scrollbar-thumb {
     background-color: #333;
     border-radius: 10px;
 }
+
+/* 右側戰術面板 (Dashboard) */
+.dashboard {
+    flex: 4;
+    /* 佔 40% */
+    background: rgba(255, 255, 255, 0.03);
+    /* 極淡的背景 */
+    backdrop-filter: blur(20px);
+    /* 毛玻璃效果 */
+    -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-shadow: inset 10px 0 20px -10px rgba(0, 0, 0, 0.5);
+    /* 內部陰影增加層次 */
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* 呼吸燈指示器 */
+.pulse-indicator {
+    width: 8px;
+    height: 8px;
+    background-color: #00ff88;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7);
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(0, 255, 136, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(0, 255, 136, 0);
+    }
+}
+
+/* 備忘錄列表 */
+.memo-list {
+    list-style: none;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding-right: 5px;
+    /* 預留捲動條空間 */
+}
+
+/* 備忘錄卡片 */
+.memo-card {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 15px;
+    transition: all 0.3s ease;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+    animation: slideInRight 0.4s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.memo-card:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.memo-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    background: linear-gradient(to bottom, #00c6ff, #0072ff);
+    border-radius: 4px 0 0 4px;
+}
+
+.memo-time {
+    font-size: 12px;
+    color: #00c6ff;
+    margin-bottom: 5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.memo-title {
+    font-size: 15px;
+    color: #fff;
+    line-height: 1.4;
+}
+
 
 /* 時間戳記 */
 .time-stamp {
@@ -104,7 +255,8 @@ body {
 
 /* 訊息氣泡通用樣式 */
 .message {
-    max-width: 70%;
+    max-width: 85%;
+    /* 稍微放寬 */
     display: flex;
     align-items: flex-end;
     /* 頭像對齊底部 */
@@ -229,6 +381,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    /* 確保滿版 */
+    flex-shrink: 0;
 }
 
 .input-wrapper {
