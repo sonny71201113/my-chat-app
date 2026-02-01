@@ -599,3 +599,58 @@ body {
     white-space: nowrap;
     border: 0;
 }
+
+/* --- 備忘錄動態元件美化包 --- */
+
+/* 1. 美化編輯與刪除按鈕 */
+.memo-actions button {
+    background: rgba(255, 255, 255, 0.1); /* 半透明背景 */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+    padding: 6px 12px;
+    border-radius: 8px; /* 圓角 */
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    margin-right: 6px;
+}
+
+.memo-actions button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px); /* 滑鼠放上去會微微浮起 */
+}
+
+/* 讓刪除按鈕變紅色，比較好認 */
+.memo-actions button:last-child:hover {
+    background: rgba(255, 59, 48, 0.3); /* 紅色警告感 */
+    border-color: rgba(255, 59, 48, 0.5);
+    color: #ffcccb;
+}
+
+/* 2. 美化編輯時的輸入框 */
+.memo-card input[type="text"],
+.memo-card input[type="datetime-local"] {
+    background: #2a2a2a; /* 深色底 */
+    border: 1px solid #444;
+    color: #fff; /* 白字 */
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    width: 100%; /* 讓它填滿空間 */
+    margin-bottom: 5px; /* 跟下面的按鈕分開一點 */
+}
+
+.memo-card input:focus {
+    border-color: #0095F6; /* 聚焦時變 IG 藍 */
+    box-shadow: 0 0 0 2px rgba(0, 149, 246, 0.3);
+}
+
+/* 調整一下按鈕的排列，讓它們不要擠在一起 */
+.memo-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 5px;
+}
+
