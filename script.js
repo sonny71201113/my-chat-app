@@ -374,15 +374,143 @@ messageInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
 
-// 啟動初始化
-init();
+// --- Navigation & View Switching Logic ---
 
-// --- 通知系統相關功能 ---
+const contactListView = document.getElementById('contact-list-view');
+const chatInterfaceView = document.getElementById('chat-interface-view');
+const backBtn = document.getElementById('back-btn');
+const contactItems = document.querySelectorAll('.contact-item');
+
+// Chat Context Elements
+const chatAvatar = document.getElementById('chat-avatar');
+const chatUsername = document.getElementById('chat-username');
+const chatStatus = document.getElementById('chat-status');
+
+// Default Content (AI Manager)
+const aiManagerContentHTML = chatContainer.innerHTML; // 保存預設的 AI 歡迎畫面
+const aiManagerName = "DesignGod_Kyle"; // 或者 "AI 私人經理"
+const aiManagerAvatar = "https://ui-avatars.com/api/?name=User&background=random";
+
+// 初始化
+function initApp() {
+    loadMemos(); // 載入備忘錄
+
+    // 綁定列表點擊事件
+    contactItems.forEach(item => {
+        item.addEventListener('click', () => {
+            if (item.id === 'contact-ai-manager') {
+                openChat('manager');
+            } else {
+                const name = item.dataset.contact;
+                openChat('friend', name);
+            }
+        });
+    });
+
+    // 綁定返回按鈕
+    backBtn.addEventListener('click', closeChat);
+
+    // 初始狀態檢查
+    updateNotifyBtnState();
+}
+
+/**
+ * 開啟聊天室
+ * @param {string} type - 'manager' | 'friend'
+ * @param {string} name - Friend's name
+ */
+function openChat(type, name) {
+    // 1. 設定聊天室內容
+    if (type === 'manager') {
+        // AI 經理人模式
+        chatContainer.innerHTML = aiManagerContentHTML; // 恢復歡迎訊息
+        chatUsername.textContent = "AI 私人經理";
+        chatStatus.textContent = "隨時待命";
+        chatAvatar.src = "https://ui-avatars.com/api/?name=AI&background=0095F6&color=fff";
+
+        // 顯示 Dashboard (Memos)
+        document.querySelector('.dashboard').style.display = 'flex';
+        modeSelect.value = 'manager';
+
+        // 恢復之前的 Memos
+        loadMemos();
+    } else {
+        // 朋友閒聊模式
+        chatContainer.innerHTML = ''; // 清空聊天紀錄
+        chatUsername.textContent = name;
+        chatStatus.textContent = "上線中";
+        chatAvatar.src = `https://ui-avatars.com/api/?name=${name}&background=random`;
+
+        // 增加一個簡單的歡迎氣泡
+        addMessage(`與 ${name} 的對話開始`, 'center'); // 我們需要修改 addMessage 支援 center 嗎？暫時用 left 或做個特殊處理
+
+        // 隱藏 Dashboard (暫時) 或 保持顯示但不相關
+        // 為了 UI 完整性，我們保持 Dashboard 但也許可以隱藏內容？
+        // 這裡暫時隱藏 Dashboard 讓聊天視窗變寬 (Mobile style for everyone?)
+        // 或者保持不動。requirements 說 "click other friends temporarily just need to enter an empty chat interface"
+        // 讓我們保持 Dashboard 顯示，這樣比較像 "App 的原有介面"
+
+        modeSelect.value = 'chat';
+    }
+
+    // 2. 執行轉場動畫
+    contactListView.classList.add('slide-out-left');
+    chatInterfaceView.classList.add('active-view');
+}
+
+/**
+ * 關閉聊天室 (返回列表)
+ */
+function closeChat() {
+    contactListView.classList.remove('slide-out-left');
+    chatInterfaceView.classList.remove('active-view');
+
+    // 收起鍵盤 (Mobile)
+    messageInput.blur();
+}
+
+function addMessage(text, side) {
+    const messageDiv = document.createElement('div');
+
+    if (side === 'center') {
+        messageDiv.classList.add('time-stamp'); // 重用 time-stamp 樣式
+        messageDiv.textContent = text;
+        chatContainer.appendChild(messageDiv);
+        scrollToBottom();
+        return;
+    }
+
+    messageDiv.classList.add('message', side);
+
+    if (side === 'left') {
+        const avatarDiv = document.createElement('div');
+        avatarDiv.classList.add('avatar-small');
+        // 根據目前聊天對象獲取頭像，這裡簡化使用 chatAvatar 的 src
+        const currentAvatarSrc = chatAvatar.src;
+        avatarDiv.innerHTML = `<img src="${currentAvatarSrc}" alt="Avatar">`;
+        messageDiv.appendChild(avatarDiv);
+    }
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('message-content');
+    contentDiv.innerHTML = text.replace(/\n/g, '<br>');
+
+    messageDiv.appendChild(contentDiv);
+    chatContainer.appendChild(messageDiv);
+
+    scrollToBottom();
+}
+
+
+// 啟動 App
+initApp();
+
+
+// --- 通知系統相關功能 (保留並優化) ---
 
 // 1. 初始化與按鈕監聽
 const notifyBtn = document.getElementById('notify-btn');
 notifyBtn.addEventListener('click', () => {
-    // 請求權限
     if (Notification.permission !== "granted") {
         Notification.requestPermission().then(permission => {
             updateNotifyBtnState();
@@ -393,9 +521,6 @@ notifyBtn.addEventListener('click', () => {
     }
 });
 
-/**
- * 更新通知按鈕狀態 (亮起或變暗)
- */
 function updateNotifyBtnState() {
     if (Notification.permission === "granted") {
         notifyBtn.classList.add('active');
@@ -406,90 +531,60 @@ function updateNotifyBtnState() {
     }
 }
 
-// 2. 定時檢查系統 (每 10 秒檢查一次，比較精確)
+// 2. 定時檢查系統
 setInterval(checkReminders, 10000);
 
-/**
- * 檢查是否有到期的備忘錄
- */
 function checkReminders() {
-    if (Notification.permission !== "granted") return; // 雖然沒權限也可以標記完成，但這裡先綁定
+    if (Notification.permission !== "granted") return;
 
     const now = new Date();
-    // 格式化當前時間為 YYYY-MM-DD HH:mm (與 AI 回傳格式需一致)
-    // 為了容錯，我們也嘗試只比對 HH:mm
-    const currentFullTime = formatTime(now); // "2024-01-01 10:00"
-    const currentShortTime = formatTimeShort(now); // "10:00"
+    const currentFullTime = formatTime(now);
+    const currentShortTime = formatTimeShort(now);
 
     let updated = false;
 
     memos.forEach(memo => {
-        if (memo.notified || memo.completed) return; // 已經通知過或已完成就跳過
-
-        // 判斷邏輯：
-        // 1. 完全符合 YYYY-MM-DD HH:mm
-        // 2. 或者只符合 HH:mm (當 AI 偷懶只給短時間時)
-        // 3. 簡單檢查字串包含 (例如 "明天 10:00" 包含 "10:00") - 這比較寬鬆，但對簡單應用足夠
+        if (memo.notified || memo.completed) return;
 
         let shouldNotify = false;
 
-        // 如果 memo.time 是完整格式
         if (memo.time === currentFullTime) {
             shouldNotify = true;
         }
-        // 寬鬆比對：如果當前時間字串出現在 memo.time 裡 (例如 memo: "下午 02:00", current: "14:00" -> 需注意 12/24 小時制)
-        // 這裡我們假設 AI 能依照指示給出 24 小時制格式，或是我們解析比較
-        // 簡單做：如果 memo.time 包含當下短時間 (HH:mm)
         else if (memo.time && memo.time.includes(currentShortTime)) {
-            // 避免誤判 (如 10:00 包含 0:00)，這裡先簡單做
             shouldNotify = true;
         }
 
         if (shouldNotify) {
             sendNotification(memo);
-
-            // 更新狀態
             memo.notified = true;
-            memo.completed = true; // 自動標記為完成
-
-            // 視覺更新：重新渲染該卡片以顯示完成狀態
+            memo.completed = true;
             renderMemo(memo);
-
             updated = true;
         }
     });
 
     if (updated) {
-        saveMemos(); // 儲存狀態
+        saveMemos();
     }
 }
 
-/**
- * 發送瀏覽器通知
- */
 function sendNotification(memo) {
-    // 1. 彈窗
     const n = new Notification("經理人提醒", {
         body: memo.title,
-        icon: "https://ui-avatars.com/api/?name=AI&background=0095F6&color=fff", // 簡單圖示
-        requireInteraction: true // 讓通知停留在螢幕上直到使用者點擊
+        icon: "https://ui-avatars.com/api/?name=AI&background=0095F6&color=fff",
+        requireInteraction: true
     });
 
-    // 點擊通知回到視窗
     n.onclick = function () {
         window.focus();
         this.close();
     };
 
-    // 2. 播放提示音
     playNotificationSound();
 }
 
-/**
- * 播放短促提示音 (Base64 Beep)
- */
 function playNotificationSound() {
-    // 一個簡單的短促提示音 (Glass Ping)
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -498,7 +593,7 @@ function playNotificationSound() {
     gainNode.connect(audioContext.destination);
 
     oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
     oscillator.frequency.exponentialRampToValueAtTime(440, audioContext.currentTime + 0.1);
 
     gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
@@ -508,17 +603,12 @@ function playNotificationSound() {
     oscillator.stop(audioContext.currentTime + 0.1);
 }
 
-// 輔助函式：格式化時間 YYYY-MM-DD HH:mm
 function formatTime(date) {
     const pad = (n) => n.toString().padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-// 輔助函式：格式化時間 HH:mm
 function formatTimeShort(date) {
     const pad = (n) => n.toString().padStart(2, '0');
     return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
-
-// 頁面載入時檢查權限狀態
-updateNotifyBtnState();
