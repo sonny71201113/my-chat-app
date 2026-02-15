@@ -734,7 +734,7 @@ body {
 
 .view.active-view {
     visibility: visible;
-    transform: translateX(0);
+    transform: translateX(0) !important;
     z-index: 2;
 }
 
